@@ -1,0 +1,138 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using FrontEndBlazor.Services
+@inject IAuthService AuthService
+
+<!-- HEADER -->
+<div class="top-row ps-3 navbar-custom">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="">
+            <img src="Logo - copia.png" alt="Hospital" class="me-2 logo-hospital" />
+            <span class="navbar-brand">Hospital</span>
+        </a>
+
+        <button class="navbar-toggler d-md-none" @onclick="ToggleNavMenu" aria-expanded="@(!colapsado)">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="@NavMenuCssClass nav-scrollable sidebar-custom" @onclick="ToggleNavMenu">
+    <nav class="nav flex-column">
+        <!-- Home: Siempre visible -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-hospital"></i>
+                Home
+            </NavLink>
+        </div>
+
+        @if (isAuthenticated)
+        {
+            <!-- Medicamentos: Todos los roles -->
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="MedicamentosPage">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-journal-medical"></i>
+                        <span class="ms-2">Medicamentos</span>
+                    </div>
+                </NavLink>
+            </div>
+
+            <!-- Alertas: Todos los roles -->
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="AlertasPage">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-bell-fill"></i>
+                        <span class="ms-2">Alertas</span>
+                    </div>
+                </NavLink>
+            </div>
+
+            <!-- Ventas: Admin y Farmacéutico -->
+            @if (userRole == "admin" || userRole == "farmaceutico")
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="ventas">
+                        <i class="bi bi-cart-check-fill"></i>
+                        Ventas
+                    </NavLink>
+                </div>
+            }
+
+            <!-- Proveedores: Admin y Compras -->
+            @if (userRole == "admin" || userRole == "compras")
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="ProveedoresPage">
+                        <i class="bi bi-building-add"></i>
+                        Proveedores
+                    </NavLink>
+                </div>
+                
+                <!-- Órdenes de Compra: Admin y Compras (HU-4.02) -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="OrdenesPage">
+                        <i class="bi bi-clipboard-check"></i>
+                        Órdenes de Compra
+                    </NavLink>
+                </div>
+            }
+            
+            <!-- Reportes: Solo Admin (HU-4.03) -->
+            @if (userRole == "admin")
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="ReportesPage">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Reportes
+                    </NavLink>
+                </div>
+            }
+        }
+    </nav>
+</div>
+
+@code {
+    private bool colapsado = true;
+    private bool isAuthenticated = false;
+    private string userRole = "";
+    
+    private string NavMenuCssClass => colapsado ? "collapse" : "show";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthState();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Re-verificar autenticación después del primer render
+            await LoadAuthState();
+            StateHasChanged();
+        }
+    }
+    
+    private async Task LoadAuthState()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (isAuthenticated)
+        {
+            // Obtener el rol del usuario del token
+            userRole = await AuthService.GetUserRoleAsync();
+        }
+        else
+        {
+            userRole = "";
+        }
+    }
+    
+    private void ToggleNavMenu()
+    {
+        colapsado = !colapsado;
+    }
+}
